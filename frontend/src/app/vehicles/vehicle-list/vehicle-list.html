@@ -1,0 +1,119 @@
+<div class="vehicles-container">
+  <div class="page-header">
+    <div>
+      <h2>Vehicles & Customers</h2>
+      <p class="subtitle">Showroom vehicle registry, customer associations, and service management</p>
+    </div>
+    <a routerLink="/vehicles/add" class="btn-primary">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      Add Vehicle & Customer
+    </a>
+  </div>
+
+  <!-- Success & Error Alerts -->
+  <div *ngIf="successMessage()" class="success-msg">
+    {{ successMessage() }}
+  </div>
+  <div *ngIf="error()" class="error-msg">
+    {{ error() }}
+  </div>
+
+  <!-- Search Card -->
+  <div class="card search-card">
+    <form (ngSubmit)="onSearch()" class="search-form">
+      <div class="search-input-wrapper">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input
+          type="text"
+          [ngModel]="searchQuery()"
+          (ngModelChange)="searchQuery.set($event)"
+          name="searchQuery"
+          placeholder="Search by registration number, customer name, phone, brand, or model..."
+          class="search-input"
+        />
+      </div>
+      <button type="submit" class="btn-primary">Search</button>
+      <button *ngIf="searchQuery()" type="button" (click)="clearSearch()" class="btn-secondary">Reset</button>
+    </form>
+  </div>
+
+  <!-- Vehicles Table Card -->
+  <div class="card">
+    <div *ngIf="loading()" class="loading">
+      <div class="spinner"></div>
+      <p>Loading vehicle records...</p>
+    </div>
+
+    <div *ngIf="!loading() && vehicles().length === 0" class="empty-state">
+      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"></path>
+        <circle cx="7" cy="17" r="2"></circle>
+        <path d="M9 17h6"></path>
+        <circle cx="17" cy="17" r="2"></circle>
+      </svg>
+      <p *ngIf="!searchQuery().trim()">No vehicles registered in the system yet.</p>
+      <p *ngIf="searchQuery().trim()">No vehicles found matching "<strong>{{ searchQuery().trim() }}</strong>"</p>
+      <a [routerLink]="['/vehicles/add']" [queryParams]="getRegisterQueryParams()" class="btn-primary btn-sm">
+        Register Vehicle
+      </a>
+    </div>
+
+    <div *ngIf="!loading() && vehicles().length > 0" class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Registration</th>
+            <th>Customer Name</th>
+            <th>Customer Phone</th>
+            <th>Brand</th>
+            <th>Model</th>
+            <th>Year</th>
+            <th>Fuel Type</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let v of vehicles()">
+            <td>
+              <span class="reg-badge">{{ v.registrationNumber }}</span>
+            </td>
+            <td>
+              <strong>{{ v.customer?.fullName || '—' }}</strong>
+            </td>
+            <td class="font-mono">
+              {{ v.customer?.phone || '—' }}
+            </td>
+            <td>{{ v.brand }}</td>
+            <td>{{ v.model }} <span *ngIf="v.variant" class="variant-text">({{ v.variant }})</span></td>
+            <td>{{ v.manufacturingYear || '—' }}</td>
+            <td>
+              <span class="badge badge-blue">{{ v.fuelType }}</span>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <a [routerLink]="['/vehicles', v.vehicleId]" class="btn-secondary btn-sm" title="View vehicle specifications & owner info">
+                  Details
+                </a>
+                <a [routerLink]="['/service-history']" [queryParams]="{ reg: v.registrationNumber }" class="btn-primary btn-sm" title="Open complete service history">
+                  History
+                </a>
+                <a [routerLink]="['/vehicles', v.vehicleId, 'edit']" class="btn-secondary btn-sm" title="Edit vehicle or owner information">
+                  Edit
+                </a>
+                <button (click)="deleteVehicle(v)" class="btn-danger btn-sm" title="Delete vehicle">
+                  Delete
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

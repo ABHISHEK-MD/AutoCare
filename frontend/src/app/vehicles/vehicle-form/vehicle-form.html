@@ -1,0 +1,284 @@
+<div class="form-container">
+  <div class="page-header">
+    <div>
+      <h2>{{ isEditMode() ? 'Edit Vehicle & Customer' : 'Register Vehicle & Customer' }}</h2>
+      <p class="subtitle">
+        {{ isEditMode() ? 'Update vehicle specifications or customer contact info' : 'Register a new customer and vehicle together in one step, or associate with an existing customer' }}
+      </p>
+    </div>
+    <a [routerLink]="isEditMode() ? ['/vehicles', vehicleId()] : ['/vehicles']" class="btn-secondary">
+      ← Back
+    </a>
+  </div>
+
+  <div *ngIf="errorMessage()" class="error-msg">
+    {{ errorMessage() }}
+  </div>
+
+  <div *ngIf="loading()" class="loading">
+    <div class="spinner"></div>
+    <p>Loading vehicle data...</p>
+  </div>
+
+  <div *ngIf="!loading()" class="card form-card">
+    <form [formGroup]="vehicleForm" (ngSubmit)="onSubmit()">
+      
+      <!-- ============================================ -->
+      <!-- SECTION 1: CUSTOMER INFORMATION -->
+      <!-- ============================================ -->
+      <div class="form-section">
+        <div class="section-title-row">
+          <div class="section-title-wrap">
+            <span class="step-num">1</span>
+            <h3 class="form-section-title">Customer / Owner Information</h3>
+          </div>
+          <button *ngIf="!isEditMode()" type="button" (click)="toggleCustomerSearchModal()" class="btn-secondary btn-sm">
+            🔍 Select Existing Customer
+          </button>
+        </div>
+
+        <!-- Customer Status Badge -->
+        <div *ngIf="selectedCustomerId()" class="linked-customer-banner">
+          <div class="linked-info">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 6 9 17l-5-5"/>
+            </svg>
+            <span>Linked to Existing Customer: <strong>{{ selectedCustomer()?.fullName || vehicleForm.get('customerFullName')?.value }}</strong> (ID #{{ selectedCustomerId() }})</span>
+          </div>
+          <button *ngIf="!isEditMode()" type="button" (click)="unlinkCustomer()" class="btn-unlink">
+            Unlink / New Customer
+          </button>
+        </div>
+
+        <!-- Suggested Customer Banner (Discovered via Phone lookup) -->
+        <div *ngIf="suggestedCustomer() && !selectedCustomerId()" class="suggested-customer-banner">
+          <div class="suggest-icon">💡</div>
+          <div class="suggest-body">
+            <strong>Existing Customer Found!</strong>
+            <p>A customer named <strong>{{ suggestedCustomer()!.fullName }}</strong> is registered with phone <strong>{{ suggestedCustomer()!.phone }}</strong>.</p>
+            <div class="suggest-actions">
+              <button type="button" (click)="useSuggestedCustomer()" class="btn-primary btn-sm">
+                Yes, Associate with {{ suggestedCustomer()!.fullName }}
+              </button>
+              <button type="button" (click)="dismissSuggestedCustomer()" class="btn-secondary btn-sm">
+                No, This is a Different Customer
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Full Name and Phone Row -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="customerFullName">Customer Full Name <span class="required">*</span></label>
+            <input
+              id="customerFullName"
+              type="text"
+              formControlName="customerFullName"
+              placeholder="e.g. Ramesh Kumar"
+              [class.input-error]="vehicleForm.get('customerFullName')?.touched && vehicleForm.get('customerFullName')?.invalid"
+            />
+            <div *ngIf="vehicleForm.get('customerFullName')?.touched && vehicleForm.get('customerFullName')?.invalid" class="error-text">
+              <span *ngIf="vehicleForm.get('customerFullName')?.errors?.['required']">Full name is mandatory.</span>
+              <span *ngIf="vehicleForm.get('customerFullName')?.errors?.['minlength']">Name must be at least 2 characters.</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="customerPhone">Phone Number <span class="required">*</span></label>
+            <input
+              id="customerPhone"
+              type="tel"
+              formControlName="customerPhone"
+              (blur)="onPhoneBlur()"
+              placeholder="e.g. 9876543210 (10-15 digits)"
+              [class.input-error]="vehicleForm.get('customerPhone')?.touched && vehicleForm.get('customerPhone')?.invalid"
+            />
+            <div *ngIf="vehicleForm.get('customerPhone')?.touched && vehicleForm.get('customerPhone')?.invalid" class="error-text">
+              <span *ngIf="vehicleForm.get('customerPhone')?.errors?.['required']">Phone number is mandatory.</span>
+              <span *ngIf="vehicleForm.get('customerPhone')?.errors?.['pattern']">Must be 10 to 15 numeric digits.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Email and Address Row -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="customerEmail">Email Address <span class="optional">(Optional)</span></label>
+            <input
+              id="customerEmail"
+              type="email"
+              formControlName="customerEmail"
+              placeholder="e.g. ramesh.kumar@example.com"
+              [class.input-error]="vehicleForm.get('customerEmail')?.touched && vehicleForm.get('customerEmail')?.invalid"
+            />
+            <div *ngIf="vehicleForm.get('customerEmail')?.touched && vehicleForm.get('customerEmail')?.invalid" class="error-text">
+              <span *ngIf="vehicleForm.get('customerEmail')?.errors?.['email']">Please provide a valid email format.</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="customerAddress">Address <span class="optional">(Optional)</span></label>
+            <input
+              id="customerAddress"
+              type="text"
+              formControlName="customerAddress"
+              placeholder="Residential or business address..."
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- ============================================ -->
+      <!-- SECTION 2: VEHICLE INFORMATION -->
+      <!-- ============================================ -->
+      <div class="form-section">
+        <div class="section-title-wrap">
+          <span class="step-num">2</span>
+          <h3 class="form-section-title">Vehicle Specifications</h3>
+        </div>
+
+        <!-- Registration Number -->
+        <div class="form-group">
+          <label for="registrationNumber">Vehicle Registration Number <span class="required">*</span></label>
+          <input
+            id="registrationNumber"
+            type="text"
+            formControlName="registrationNumber"
+            placeholder="e.g. KA01AB1234 (Letters & Numbers)"
+            style="text-transform: uppercase;"
+            [class.input-error]="vehicleForm.get('registrationNumber')?.touched && vehicleForm.get('registrationNumber')?.invalid"
+          />
+          <div *ngIf="vehicleForm.get('registrationNumber')?.touched && vehicleForm.get('registrationNumber')?.invalid" class="error-text">
+            <span *ngIf="vehicleForm.get('registrationNumber')?.errors?.['required']">Registration number is mandatory.</span>
+            <span *ngIf="vehicleForm.get('registrationNumber')?.errors?.['minlength']">Must be at least 4 characters.</span>
+          </div>
+        </div>
+
+        <!-- Brand and Model in one row -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="brand">Brand / Make <span class="required">*</span></label>
+            <input
+              id="brand"
+              type="text"
+              formControlName="brand"
+              placeholder="e.g. Toyota, Honda, Hyundai"
+              [class.input-error]="vehicleForm.get('brand')?.touched && vehicleForm.get('brand')?.invalid"
+            />
+            <div *ngIf="vehicleForm.get('brand')?.touched && vehicleForm.get('brand')?.invalid" class="error-text">
+              Brand is mandatory.
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="model">Model <span class="required">*</span></label>
+            <input
+              id="model"
+              type="text"
+              formControlName="model"
+              placeholder="e.g. Innova, City, Creta"
+              [class.input-error]="vehicleForm.get('model')?.touched && vehicleForm.get('model')?.invalid"
+            />
+            <div *ngIf="vehicleForm.get('model')?.touched && vehicleForm.get('model')?.invalid" class="error-text">
+              Model is mandatory.
+            </div>
+          </div>
+        </div>
+
+        <!-- Variant and Fuel Type in one row -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="variant">Variant <span class="optional">(Optional)</span></label>
+            <input
+              id="variant"
+              type="text"
+              formControlName="variant"
+              placeholder="e.g. Crysta ZX, VXI, SX(O)"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="fuelType">Fuel Type <span class="required">*</span></label>
+            <select
+              id="fuelType"
+              formControlName="fuelType"
+              [class.input-error]="vehicleForm.get('fuelType')?.touched && vehicleForm.get('fuelType')?.invalid"
+            >
+              <option value="">-- Select Fuel Type --</option>
+              <option *ngFor="let f of fuelTypes" [value]="f">{{ f }}</option>
+            </select>
+            <div *ngIf="vehicleForm.get('fuelType')?.touched && vehicleForm.get('fuelType')?.invalid" class="error-text">
+              Fuel type is mandatory.
+            </div>
+          </div>
+        </div>
+
+        <!-- Manufacturing Year -->
+        <div class="form-group">
+          <label for="manufacturingYear">Manufacturing Year <span class="optional">(Optional)</span></label>
+          <input
+            id="manufacturingYear"
+            type="number"
+            formControlName="manufacturingYear"
+            placeholder="e.g. 2023"
+            [class.input-error]="vehicleForm.get('manufacturingYear')?.touched && vehicleForm.get('manufacturingYear')?.invalid"
+          />
+          <div *ngIf="vehicleForm.get('manufacturingYear')?.touched && vehicleForm.get('manufacturingYear')?.invalid" class="error-text">
+            Year must be between 1900 and {{ currentYear + 1 }}.
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="form-actions">
+        <button type="submit" [disabled]="submitting()" class="btn-primary">
+          <span *ngIf="!submitting()">{{ isEditMode() ? 'Save Vehicle & Customer' : 'Register Vehicle & Customer' }}</span>
+          <span *ngIf="submitting()">Saving...</span>
+        </button>
+        <button type="button" (click)="onCancel()" class="btn-secondary">
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Customer Search Modal -->
+<div *ngIf="showCustomerSearch()" class="modal-backdrop" (click)="toggleCustomerSearchModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Select Existing Customer</h3>
+      <button type="button" class="btn-close" (click)="toggleCustomerSearchModal()">✕</button>
+    </div>
+    
+    <div class="modal-search">
+      <input
+        type="text"
+        [ngModel]="customerSearchInput()"
+        (ngModelChange)="customerSearchInput.set($event); onSearchCustomers($event)"
+        placeholder="Search by customer name or phone..."
+        autofocus
+      />
+    </div>
+
+    <div class="customer-picker-list">
+      <div *ngIf="filteredCustomers().length === 0" class="empty-picker">
+        No registered customers match your search.
+      </div>
+      <div *ngFor="let c of filteredCustomers()" class="picker-item" (click)="selectCustomer(c)">
+        <div class="picker-main">
+          <strong>{{ c.fullName }}</strong>
+          <span class="picker-phone">{{ c.phone }}</span>
+        </div>
+        <div class="picker-sub">
+          <span>{{ c.email || 'No email' }}</span>
+          <span *ngIf="c.address" class="picker-address">{{ c.address }}</span>
+        </div>
+        <button type="button" class="btn-primary btn-sm">Select</button>
+      </div>
+    </div>
+  </div>
+</div>

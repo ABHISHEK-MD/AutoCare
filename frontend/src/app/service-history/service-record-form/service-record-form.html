@@ -1,0 +1,145 @@
+<div class="form-container">
+  <div class="page-header">
+    <div>
+      <h2>{{ isEditMode() ? 'Edit Service Record' : 'Log New Service Visit' }}</h2>
+      <p class="subtitle">{{ isEditMode() ? 'Update maintenance record details' : 'Every service visit creates a new permanent record. Previous records are never overwritten.' }}</p>
+    </div>
+    <button (click)="navigateBackToVehicle()" class="btn-secondary">
+      ← Back
+    </button>
+  </div>
+
+  <!-- Vehicle Context Header Card -->
+  <div *ngIf="vehicle()" class="card vehicle-context-card">
+    <div class="context-pill">Target Vehicle</div>
+    <div class="context-details">
+      <span class="reg-badge-context">{{ vehicle()!.registrationNumber }}</span>
+      <span class="context-model"><strong>{{ vehicle()!.brand }} {{ vehicle()!.model }}</strong> <span *ngIf="vehicle()!.variant">({{ vehicle()!.variant }})</span></span>
+      <span *ngIf="vehicle()!.customer" class="context-owner">Owner: {{ vehicle()!.customer!.fullName }} ({{ vehicle()!.customer!.phone }})</span>
+    </div>
+  </div>
+
+  <!-- Error display -->
+  <div *ngIf="errorMessage()" class="error-msg">
+    {{ errorMessage() }}
+  </div>
+
+  <div *ngIf="loading()" class="loading">
+    <div class="spinner"></div>
+    <p>Loading record details...</p>
+  </div>
+
+  <!-- Service Record Form Card -->
+  <div *ngIf="!loading()" class="card form-card">
+    <form [formGroup]="serviceForm" (ngSubmit)="onSubmit()">
+      <!-- Date & Odometer Row -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="serviceDate">Service Visit Date <span class="required">*</span></label>
+          <input
+            id="serviceDate"
+            type="date"
+            formControlName="serviceDate"
+            [max]="today"
+            [class.input-error]="serviceForm.get('serviceDate')?.touched && serviceForm.get('serviceDate')?.invalid"
+          />
+          <div *ngIf="serviceForm.get('serviceDate')?.touched && serviceForm.get('serviceDate')?.invalid" class="error-text">
+            Service date is mandatory and cannot be in the future.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="odometerReading">Odometer Reading (km) <span class="required">*</span></label>
+          <input
+            id="odometerReading"
+            type="number"
+            min="0"
+            formControlName="odometerReading"
+            placeholder="e.g. 15000"
+            [class.input-error]="serviceForm.get('odometerReading')?.touched && serviceForm.get('odometerReading')?.invalid"
+          />
+          <div *ngIf="serviceForm.get('odometerReading')?.touched && serviceForm.get('odometerReading')?.invalid" class="error-text">
+            <span *ngIf="serviceForm.get('odometerReading')?.errors?.['required']">Odometer reading is mandatory.</span>
+            <span *ngIf="serviceForm.get('odometerReading')?.errors?.['min']">Cannot be negative.</span>
+          </div>
+          <span class="helper-text">Must be equal to or higher than vehicle's previous service odometer reading.</span>
+        </div>
+      </div>
+
+      <!-- Service Type -->
+      <div class="form-group">
+        <label for="serviceType">Service Type <span class="required">*</span></label>
+        <select
+          id="serviceType"
+          formControlName="serviceType"
+          [class.input-error]="serviceForm.get('serviceType')?.touched && serviceForm.get('serviceType')?.invalid"
+        >
+          <option value="">-- Select Service Type --</option>
+          <option *ngFor="let t of serviceTypes" [value]="t">{{ t }}</option>
+        </select>
+        <div *ngIf="serviceForm.get('serviceType')?.touched && serviceForm.get('serviceType')?.invalid" class="error-text">
+          Service type is mandatory.
+        </div>
+      </div>
+
+      <!-- Customer Complaint -->
+      <div class="form-group">
+        <label for="customerComplaint">Customer Complaint / Reported Issues <span class="optional">(Optional)</span></label>
+        <textarea
+          id="customerComplaint"
+          formControlName="customerComplaint"
+          rows="2"
+          placeholder="Details reported by the customer upon vehicle intake..."
+        ></textarea>
+      </div>
+
+      <!-- Work Performed -->
+      <div class="form-group">
+        <label for="workPerformed">Work Performed / Service Description <span class="required">*</span></label>
+        <textarea
+          id="workPerformed"
+          formControlName="workPerformed"
+          rows="3"
+          placeholder="List all maintenance tasks, repairs, inspections, or tuning carried out..."
+          [class.input-error]="serviceForm.get('workPerformed')?.touched && serviceForm.get('workPerformed')?.invalid"
+        ></textarea>
+        <div *ngIf="serviceForm.get('workPerformed')?.touched && serviceForm.get('workPerformed')?.invalid" class="error-text">
+          Work performed description is mandatory.
+        </div>
+      </div>
+
+      <!-- Parts Replaced -->
+      <div class="form-group">
+        <label for="partsReplaced">Parts Replaced / Materials Consumed <span class="optional">(Optional)</span></label>
+        <textarea
+          id="partsReplaced"
+          formControlName="partsReplaced"
+          rows="2"
+          placeholder="e.g. Engine Oil (4L 5W-30), Oil Filter, Front Brake Pads, Wiper Blades..."
+        ></textarea>
+      </div>
+
+      <!-- Remarks -->
+      <div class="form-group">
+        <label for="remarks">Technician Remarks & Recommendations <span class="optional">(Optional)</span></label>
+        <textarea
+          id="remarks"
+          formControlName="remarks"
+          rows="2"
+          placeholder="Next scheduled maintenance advice, tire tread status, battery health notes..."
+        ></textarea>
+      </div>
+
+      <!-- Form Actions -->
+      <div class="form-actions">
+        <button type="submit" [disabled]="submitting()" class="btn-primary">
+          <span *ngIf="!submitting()">{{ isEditMode() ? 'Update Service Record' : 'Save Service Record' }}</span>
+          <span *ngIf="submitting()">Saving...</span>
+        </button>
+        <button type="button" (click)="navigateBackToVehicle()" class="btn-secondary">
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

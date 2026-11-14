@@ -1,0 +1,117 @@
+<div class="detail-container">
+  <div class="page-header">
+    <div>
+      <h2>Service Visit Details</h2>
+      <p class="subtitle">Complete technical record for service visit #{{ record()?.serviceId }}</p>
+    </div>
+    <div class="header-actions">
+      <button (click)="goBack()" class="btn-secondary">← Back to History</button>
+      <a *ngIf="record()" [routerLink]="['/service-history', record()!.serviceId, 'edit']" class="btn-primary">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 20h9"></path>
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+        </svg>
+        Edit Record
+      </a>
+      <button *ngIf="record()" (click)="deleteRecord()" class="btn-danger">
+        Delete
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="error()" class="error-msg">
+    {{ error() }}
+  </div>
+
+  <div *ngIf="loading()" class="loading">
+    <div class="spinner"></div>
+    <p>Loading service record details...</p>
+  </div>
+
+  <div *ngIf="!loading() && record()" class="content-sections">
+    <!-- Vehicle & Customer Linked Card -->
+    <div class="card meta-card">
+      <div class="meta-col">
+        <span class="meta-label">Vehicle Info</span>
+        <div class="meta-vehicle-info">
+          <span class="reg-badge-lg">{{ record()!.vehicle?.registrationNumber || 'N/A' }}</span>
+          <span class="meta-vehicle-desc">
+            <strong>{{ record()!.vehicle?.brand }} {{ record()!.vehicle?.model }}</strong>
+            <span *ngIf="record()!.vehicle?.variant">({{ record()!.vehicle?.variant }})</span>
+          </span>
+          <span class="badge badge-blue">{{ record()!.vehicle?.fuelType }}</span>
+        </div>
+      </div>
+
+      <div class="meta-col">
+        <span class="meta-label">Customer / Owner</span>
+        <div class="meta-owner-info">
+          <span class="owner-name">{{ record()!.vehicle?.customer?.fullName || 'N/A' }}</span>
+          <span class="owner-phone font-mono">Phone: {{ record()!.vehicle?.customer?.phone || '—' }}</span>
+          <span *ngIf="record()!.vehicle?.customer?.email" class="owner-email">Email: {{ record()!.vehicle?.customer?.email }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Service Record Content Card -->
+    <div class="card service-info-card">
+      <div class="card-section-title">Maintenance Record Specifications</div>
+
+      <div class="specs-grid">
+        <div class="spec-cell">
+          <span class="cell-label">Service Date</span>
+          <span class="cell-value-large">{{ record()!.serviceDate | date:'longDate' }}</span>
+        </div>
+
+        <div class="spec-cell">
+          <span class="cell-label">Odometer Reading</span>
+          <span class="cell-value-large font-mono">{{ record()!.odometerReading | number }} km</span>
+        </div>
+
+        <div class="spec-cell">
+          <span class="cell-label">Service Type</span>
+          <span class="badge badge-blue badge-large">{{ record()!.serviceType }}</span>
+        </div>
+
+        <div class="spec-cell">
+          <span class="cell-label">Recorded In Database</span>
+          <span class="cell-value-subtle">{{ record()!.createdAt | date:'medium' }}</span>
+        </div>
+      </div>
+
+      <div class="text-sections">
+        <!-- Customer Complaint -->
+        <div class="text-block">
+          <span class="text-label">Customer Complaint / Reported Symptoms</span>
+          <div class="text-content">
+            {{ record()!.customerComplaint || 'No customer complaint logged for this visit.' }}
+          </div>
+        </div>
+
+        <!-- Work Performed -->
+        <div class="text-block">
+          <span class="text-label">Work Performed / Service Tasks Executed</span>
+          <div class="text-content highlight-box">
+            {{ record()!.workPerformed }}
+          </div>
+        </div>
+
+        <!-- Parts Replaced -->
+        <div class="text-block">
+          <span class="text-label">Parts Replaced / Materials Consumed</span>
+          <div class="text-content">
+            {{ record()!.partsReplaced || 'No replacement parts logged.' }}
+          </div>
+        </div>
+
+        <!-- Remarks -->
+        <div class="text-block">
+          <span class="text-label">Technician Remarks & Recommendations</span>
+          <div class="text-content">
+            {{ record()!.remarks || 'No special technician remarks logged.' }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
